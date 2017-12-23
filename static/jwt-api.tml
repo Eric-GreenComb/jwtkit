@@ -431,8 +431,11 @@ func (jwa JWTIdentity) Refresh(ctx context.Context, encodedRefreshToken string) 
 		}
 	}
 
+	// create new refresh token with special id and record refresh token.
+	refreshToken := base64.StdEncoding.EncodeToString([]byte(record.RefreshToken + ":" + claim.SpecialID))
+
 	return JWTAuth{
-		RefreshToken:     record.RefreshToken,
+		RefreshToken:     refreshToken,
 		AccessToken:      jwtAccessToken,
 		Expires:  claim.ExpiresAt,
 		RefreshExpires: record.Expires.Unix(),
