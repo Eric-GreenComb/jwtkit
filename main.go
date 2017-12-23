@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/gokit/mgokit/mgo"
+	"github.com/gokit/jwtkit/jwt"
 	"github.com/influx6/faux/flags"
 	"github.com/influx6/faux/metrics"
 	"github.com/influx6/faux/metrics/custom"
@@ -12,10 +12,10 @@ import (
 )
 
 func main() {
-	flags.Run("mgokit", flags.Command{
+	flags.Run("jwtkit", flags.Command{
 		Name:      "generate",
-		ShortDesc: "Generates mongo CRUD packages for structs",
-		Desc:      "Generates from go packages to create CRUD implementations for types using mongodb",
+		ShortDesc: "Generates jwt packages for structs",
+		Desc:      "Generates packages to create JWT Authentication API for JWT based SSO Login",
 		Action: func(ctx flags.Context) error {
 			force, _ := ctx.GetBool("force")
 			dest, _ := ctx.GetString("dest")
@@ -40,8 +40,7 @@ func main() {
 			currentdir = filepath.Join(currentdir, target)
 
 			generators := ast.NewAnnotationRegistryWith(logs)
-			generators.Register("mongo", mgo.MongoSolo)
-			generators.Register("mongoapi", mgo.MongoGen)
+			generators.Register("@jwt", jwt.JWTGen)
 
 			res, err := ast.ParseAnnotations(logs, currentdir)
 			if err != nil {
