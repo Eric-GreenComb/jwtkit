@@ -22,7 +22,7 @@ type JWTAPI struct{
 // New returns a new JWTAPI instance using the provided operator and
 // metric.
 func New(m metrics.Metrics, backend IdentityBackend) JWTAPI {
-	return &JWTAPI{
+	return JWTAPI{
 		metrics: m,
 		operator: backend,
 	}
