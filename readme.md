@@ -54,3 +54,40 @@ attribute pointing to a local exported struct which contains expected
 data to be received to authenticate a login session by the user to 
 authenticate itself for access to the jwt authorization system.
 
+```go
+
+blacklist := mock.TokenBackend()
+whitelist := mock.TokenBackend()
+idb := mock.IdentityBackend()
+
+jwter := userclaimjwt.NewJWTIdentity(userclaimjwt.JWTConfig{
+	Maker:               noSecureUser,
+	Signer:              "wellington",
+	SigningSecret:       "All we want is to sign this",
+	Method:              jwt.SigningMethodHS256,
+	AccessTokenExpires:  700 * time.Millisecond,
+	RefreshTokenExpires: 4 * time.Second,
+}, blacklist, whitelist, idb)
+
+var cred pkg.CreateUserSession
+if jsnerr := json.Unmarshal([]byte(contractDataJSON), &cred); jsnerr != nil {
+	panic(jsnerr)
+}
+
+auth, err := jwter.Grant(context.Background(), cred)
+if err != nil {
+	panic(jsnerr)
+}
+
+```
+
+Where `auth` is:
+```json
+{
+	"expires": 323231,
+	"refresh_token":"",
+	"access_token":"",
+	"token_type": "Bearer",
+	"refresh_expires": 323231,
+}
+```
