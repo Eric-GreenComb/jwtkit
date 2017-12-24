@@ -138,6 +138,18 @@ type IdentityHTTP interface {
 	Revoke(*httputil.Context) error
 	Refresh(*httputil.Context) error
 	Authenticate(*httputil.Context) error
+	AuthenticateJSON(*httputil.Context) error
+}
+
+// IdentityToken embodies data received over api calls to refresh or revoke a identity token.
+type IdentityToken struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+// IdentityAccess embodies data received over api calls to revoke or refresh a identity token.
+type IdentityAccess struct {
+	Type string  `json:"type"`
+	AccessToken string `json:"access_token"`
 }
 
 // IdentityInfo contains meta-data regarding all records in db of type Identity.
