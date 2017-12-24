@@ -581,7 +581,6 @@ func (api JWTAPI) AuthenticateJSON(ctx *httputil.Context) error {
 	}
 
 	api.metrics.Emit(metrics.Info("Response Delivered"),metrics.WithFields(metrics.Field{
-		"type": authType,
 		"authorization": incoming,
 		"url":       ctx.Request().URL.String(),
 		"status": http.StatusNoContent,
