@@ -14,6 +14,7 @@ var (
 	ErrExpiredRefreshToken  = errors.New("refresh_token already expired")
 	ErrExpiredAccessToken  = errors.New("access_token already expired")
 	ErrInvalidSigningMethod = errors.New("token signing method mismatched")
+	ErrFailedToGetSecret        = errors.New("target-id failed to get secret from secrets function")
 )
 
 // Identity embodies data stored for a user's login credentials.
@@ -182,18 +183,22 @@ type JWTClaim struct {
 // IdentityMaker defines a function type provided by maker for generating identity claim.
 type IdentityMaker func(context.Context, JWTConfig, {{.Contract.Package}}.{{.Contract.Object.Name.Name}}) (Testimony, error)
 
-// TokenValidator defines a function type provided by user for validating incoming token.
-type TokenValidator func(JWTConfig, *jwt.Token) (interface{}, error)
+// TokenValidator defines a function type provided by user for custom validating incoming token.
+type TokenValidator func(context.Context, JWTConfig, *jwt.Token) error
+
+// TokenSecrets defines a function type when provided the config and target id received from
+// the Identity maker will return a byte slice which represent the secret the token is signed with.
+type TokenSecrets func(context.Context, JWTConfig, string) ([]byte, error)
 
 // JWTConfig embodies the field for configuring JWTBackend.
 type JWTConfig struct {
     Signer              string
-    SigningSecret       string
-    Maker               IdentityMaker
-    Method              jwt.SigningMethod
     AccessTokenExpires  time.Duration
     RefreshTokenExpires time.Duration
-    Authenticator       TokenValidator
+	Maker               IdentityMaker
+	Secrets             TokenSecrets
+	Validator           TokenValidator
+	Method              jwt.SigningMethod
 }
 
 // JWTIdentity implements the IdentityBackend interface and embodies all
@@ -225,11 +230,20 @@ func (jwa JWTIdentity) Authenticate(ctx context.Context, accessToken string) ({{
 			return nil, ErrInvalidSigningMethod
 		}
 
-		if jwa.config.Authenticator != nil {
-			return jwa.config.Authenticator(jwa.config, t)
+		// If user provides validator then run to allow user validate token.
+		if jwa.config.Validator != nil {
+			if err := jwa.config.Validator(ctx, jwa.config, t); err != nil {
+				return nil, err
+			}
 		}
 
-		return []byte(jwa.config.SigningSecret), nil
+		// Retrieve secret for target from secrets function.
+		secret, err := jwa.config.Secrets(ctx, jwa.Config, t.Header["jwt-target-id"])
+		if err != nil {
+			return nil, err
+		}
+
+		return secret, nil
 	})
 
 	if err != nil {
@@ -417,6 +431,15 @@ func (jwa JWTIdentity) Refresh(ctx context.Context, encodedRefreshToken string) 
 		}
 	}
 
+	// Retrieve secret for target from secrets function.
+	secret, err := jwa.config.Secrets(ctx, jwa.Config, record.TargetID)
+	if err != nil {
+		return JWTAuth{}, JWTError{
+			Err:    ErrFailedToGetSecret,
+			SrcErr: err,
+		}
+	}
+
 	// Delete old token existing for record for access.
 	if err = jwa.whitelist.Remove(ctx, record.PublicID, specialID); err != nil {
 		return JWTAuth{}, JWTError{
@@ -424,6 +447,7 @@ func (jwa JWTIdentity) Refresh(ctx context.Context, encodedRefreshToken string) 
 			SrcErr: err,
 		}
 	}
+
 
 	accessExpires := now.Add(jwa.config.AccessTokenExpires)
 
@@ -443,8 +467,10 @@ func (jwa JWTIdentity) Refresh(ctx context.Context, encodedRefreshToken string) 
 		}
 	}
 
+
 	jwtToken := jwt.NewWithClaims(jwa.config.Method, claim)
-	jwtAccessToken, err := jwtToken.SignedString([]byte(jwa.config.SigningSecret))
+	jwtToken.Header["jwt-target-id"] = record.TargetID
+	jwtAccessToken, err := jwtToken.SignedString(secret)
 	if err != nil {
 		return JWTAuth{}, JWTError{
 			Err:    ErrInternalError,
@@ -470,6 +496,15 @@ func (jwa JWTIdentity) Grant(ctx context.Context, cr {{.Contract.Package}}.{{.Co
 	rclaim, err := jwa.config.Maker(ctx, jwa.config, cr)
 	if err != nil {
 		return JWTAuth{}, err
+	}
+
+	// Retrieve secret for target from secrets function.
+	secret, err := jwa.config.Secrets(ctx,jwa.Config, rclaim.TargetID)
+	if err != nil {
+		return JWTAuth{}, JWTError{
+			Err:    ErrFailedToGetSecret,
+			SrcErr: err,
+		}
 	}
 
 	now := time.Now()
@@ -518,7 +553,8 @@ func (jwa JWTIdentity) Grant(ctx context.Context, cr {{.Contract.Package}}.{{.Co
 	}
 
 	jwtToken := jwt.NewWithClaims(jwa.config.Method, claim)
-	jwtAccessToken, err := jwtToken.SignedString([]byte(jwa.config.SigningSecret))
+	jwtToken.Header["jwt-target-id"] = record.TargetID
+	jwtAccessToken, err := jwtToken.SignedString(secret)
 	if err != nil {
 		return JWTAuth{}, JWTError{
 			Err:    ErrInternalError,
