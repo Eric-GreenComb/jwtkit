@@ -12,6 +12,7 @@ var (
 	ErrInvalidRefreshToken  = errors.New("Invalid refresh token")
 	ErrTokenRefreshDenied   = errors.New("refresh_token already blacklist")
 	ErrExpiredRefreshToken  = errors.New("refresh_token already expired")
+	ErrNoTargetHeaderInToken  = errors.New("token.Header has no 'jwt-target-id'")
 	ErrExpiredAccessToken  = errors.New("access_token already expired")
 	ErrInvalidSigningMethod = errors.New("token signing method mismatched")
 	ErrFailedToGetSecret        = errors.New("target-id failed to get secret from secrets function")
@@ -237,8 +238,13 @@ func (jwa JWTIdentity) Authenticate(ctx context.Context, accessToken string) ({{
 			}
 		}
 
+		targetID, ok := t.Header["jwt-target-id"].(string)
+		if !ok {
+			return nil, ErrNoTargetHeaderInToken
+		}
+
 		// Retrieve secret for target from secrets function.
-		secret, err := jwa.config.Secrets(ctx, jwa.Config, t.Header["jwt-target-id"])
+		secret, err := jwa.config.Secrets(ctx, jwa.config, targetID)
 		if err != nil {
 			return nil, err
 		}
@@ -432,7 +438,7 @@ func (jwa JWTIdentity) Refresh(ctx context.Context, encodedRefreshToken string) 
 	}
 
 	// Retrieve secret for target from secrets function.
-	secret, err := jwa.config.Secrets(ctx, jwa.Config, record.TargetID)
+	secret, err := jwa.config.Secrets(ctx, jwa.config, record.TargetID)
 	if err != nil {
 		return JWTAuth{}, JWTError{
 			Err:    ErrFailedToGetSecret,
@@ -499,7 +505,7 @@ func (jwa JWTIdentity) Grant(ctx context.Context, cr {{.Contract.Package}}.{{.Co
 	}
 
 	// Retrieve secret for target from secrets function.
-	secret, err := jwa.config.Secrets(ctx,jwa.Config, rclaim.TargetID)
+	secret, err := jwa.config.Secrets(ctx,jwa.config, rclaim.TargetID)
 	if err != nil {
 		return JWTAuth{}, JWTError{
 			Err:    ErrFailedToGetSecret,

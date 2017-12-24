@@ -17,7 +17,7 @@ func noSecureUser(ctx context.Context, config {{.PackageName}}.JWTConfig, cr {{.
 	return userClaim, nil
 }
 
-func secretFunc(ctx context.Context, config {{.PackageName}}.JWTConfig) ([]byte, error){
+func secretFunc(ctx context.Context, config {{.PackageName}}.JWTConfig, targetID string) ([]byte, error){
 	return []byte("All we want is to sign this"), nil
 }
 
