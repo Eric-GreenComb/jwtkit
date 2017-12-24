@@ -21,7 +21,7 @@ type JWTAPI struct{
 
 // New returns a new JWTAPI instance using the provided operator and
 // metric.
-func New(m metrics.Metrics, backend IdentityBackend) *JWTAPI {
+func New(m metrics.Metrics, backend IdentityBackend) JWTAPI {
 	return &JWTAPI{
 		metrics: m,
 		operator: backend,
@@ -33,7 +33,7 @@ func New(m metrics.Metrics, backend IdentityBackend) *JWTAPI {
 // Route: /{Route}/info
 // Method: INFO
 // RESPONSE-BODY: JSON
-func (api *JWTAPI) Info(ctx *httputil.Context) error {
+func (api JWTAPI) Info(ctx *httputil.Context) error {
 	m := metrics.NewTrace()
 	defer api.metrics.Emit(metrics.Info("JWTAPI.Info"), metrics.WithTrace(m.End()))
 
@@ -77,7 +77,7 @@ func (api *JWTAPI) Info(ctx *httputil.Context) error {
 // Method: PUT
 // BODY: JSON
 //
-func (api *JWTAPI) Update(ctx *httputil.Context) error {
+func (api JWTAPI) Update(ctx *httputil.Context) error {
 	m := metrics.NewTrace()
 	defer api.metrics.Emit(metrics.Info("JWTAPI.Update"),metrics.WithTrace(m.End()))
 
@@ -140,7 +140,7 @@ func (api *JWTAPI) Update(ctx *httputil.Context) error {
 // Route: /{Route}/:public_id
 // Method: DELETE
 //
-func (api *JWTAPI) Delete(ctx *httputil.Context) error {
+func (api JWTAPI) Delete(ctx *httputil.Context) error {
 	m := metrics.NewTrace()
 	defer api.metrics.Emit(metrics.Info("JWTAPI.Delete"),metrics.WithTrace(m.End()))
 
@@ -186,7 +186,7 @@ func (api *JWTAPI) Delete(ctx *httputil.Context) error {
 // Route: /{Route}/:public_id
 // Method: GET
 // RESPONSE-BODY: JSON
-func (api *JWTAPI) Get(ctx *httputil.Context) error {
+func (api JWTAPI) Get(ctx *httputil.Context) error {
 	m := metrics.NewTrace()
 	defer api.metrics.Emit(metrics.Info("JWTAPI.Get"),metrics.WithTrace(m.End()))
 
@@ -240,7 +240,7 @@ func (api *JWTAPI) Get(ctx *httputil.Context) error {
 // Route: /{Route}/
 // Method: GET
 // RESPONSE-BODY: JSON
-func (api *JWTAPI) GetAll(ctx *httputil.Context) error {
+func (api JWTAPI) GetAll(ctx *httputil.Context) error {
 	m := metrics.NewTrace()
 	defer api.metrics.Emit(metrics.Info("JWTAPI.GetAll"),metrics.WithTrace(m.End()))
 
@@ -332,7 +332,7 @@ func (api *JWTAPI) GetAll(ctx *httputil.Context) error {
 // Method: POST
 // BODY: JSON
 //
-func (api *JWTAPI) Grant(ctx *httputil.Context) error {
+func (api JWTAPI) Grant(ctx *httputil.Context) error {
 	m := metrics.NewTrace()
 	defer api.metrics.Emit(metrics.Info("JWTAPI.Grant"),metrics.WithTrace(m.End()))
 
@@ -384,7 +384,7 @@ func (api *JWTAPI) Grant(ctx *httputil.Context) error {
 // Method: POST
 // BODY: JSON (JSON String)
 //
-func (api *JWTAPI) Refresh(ctx *httputil.Context) error {
+func (api JWTAPI) Refresh(ctx *httputil.Context) error {
 m := metrics.NewTrace()
 defer api.metrics.Emit(metrics.Info("JWTAPI.Refresh"),metrics.WithTrace(m.End()))
 
@@ -430,7 +430,7 @@ defer api.metrics.Emit(metrics.Info("JWTAPI.Refresh"),metrics.WithTrace(m.End())
 // Route: /{Route}/Authenticate
 // Method: GET
 //
-func (api *JWTAPI) Authenticate(ctx *httputil.Context) error {
+func (api JWTAPI) Authenticate(ctx *httputil.Context) error {
 	m := metrics.NewTrace()
 	defer api.metrics.Emit(metrics.Info("JWTAPI.Authenticate"),metrics.WithTrace(m.End()))
 
