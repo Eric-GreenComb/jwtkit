@@ -83,12 +83,57 @@ func JWTGen(toPackage string, an ast.AnnotationDeclaration, str ast.StructDeclar
 				gen.Import("strings", ""),
 				gen.Import("errors", ""),
 				gen.Import("context", ""),
+				gen.Import("github.com/gokit/tokens", ""),
 				gen.Import(filepath.Join(toPackage, packageName), packageName),
 				gen.Import(str.Path, ""),
 			),
 			gen.Block(
 				gen.SourceTextWith(
 					string(static.MustReadFile("jwt-mock.tml", true)),
+					gen.ToTemplateFuncs(
+						ast.ASTTemplatFuncs,
+						template.FuncMap{
+							"hasFunc":       pkgDeclr.HasFunctionFor,
+							"mapRandomJSON": ast.MapOutFieldsWithRandomValuesToJSON,
+						},
+					),
+					struct {
+						PackageName string
+						PackagePath string
+						Pkg         *ast.PackageDeclaration
+						Struct      ast.StructDeclaration
+						Contract    ast.StructDeclaration
+					}{
+						Pkg:         &pkgDeclr,
+						Struct:      str,
+						Contract:    contract,
+						PackagePath: packageFinalPath,
+						PackageName: packageName,
+					},
+				),
+			),
+		),
+	)
+
+	jwtTestGen := gen.Block(
+		gen.Package(
+			gen.Name(fmt.Sprintf("%s_test", packageName)),
+			gen.Imports(
+				gen.Import("fmt", ""),
+				gen.Import("testing", ""),
+				gen.Import("time", ""),
+				gen.Import("errors", ""),
+				gen.Import("context", ""),
+				gen.Import("github.com/gokit/tokens", ""),
+				gen.Import("github.com/influx6/faux/tests", ""),
+				gen.Import("github.com/dgrijalva/jwt-go", "jwt"),
+				gen.Import(filepath.Join(toPackage, packageName), packageName),
+				gen.Import(filepath.Join(toPackage, packageName, "mock"), ""),
+				gen.Import(str.Path, ""),
+			),
+			gen.Block(
+				gen.SourceTextWith(
+					string(static.MustReadFile("jwt-api-test.tml", true)),
 					gen.ToTemplateFuncs(
 						ast.ASTTemplatFuncs,
 						template.FuncMap{
@@ -188,6 +233,11 @@ func JWTGen(toPackage string, an ast.AnnotationDeclaration, str ast.StructDeclar
 		{
 			Writer:   fmtwriter.New(jwtGen, true, true),
 			FileName: fmt.Sprintf("%s.go", packageName),
+			Dir:      packageName,
+		},
+		{
+			Writer:   fmtwriter.New(jwtTestGen, true, true),
+			FileName: fmt.Sprintf("%s_test.go", packageName),
 			Dir:      packageName,
 		},
 		{

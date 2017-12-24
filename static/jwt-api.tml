@@ -20,10 +20,10 @@ var (
 type Identity struct {
     PublicID        string        `json:"public_id"`
     RefreshToken    string        `json:"refresh_token"`
-    Expires         time.Time     `json:"expires"`
+    Expires         int64     `json:"expires"`
     TargetID        string        `json:"target_id"`
-    LastLogin       time.Time     `json:"last_login"`
-    IssuedAt        time.Time     `json:"last_login"`
+    LastLogin       int64     `json:"last_login"`
+    IssuedAt        int64     `json:"last_login"`
     RefreshInterval time.Duration `json:"refresh_interval"`
 	Data {{.Struct.Package}}.{{.Struct.Object.Name.Name}} `json:"data"`
 }
@@ -374,7 +374,8 @@ func (jwa JWTIdentity) Refresh(ctx context.Context, encodedRefreshToken string) 
 	}
 
 	now := time.Now()
-	if record.Expires.Before(now) {
+	expires := time.Unix(record.Expires, 0)
+	if expires.Before(now) {
 		if err := jwa.IdentityDBBackend.Delete(ctx, record.PublicID); err != nil {
 			return JWTAuth{}, JWTError{
 				Err:    ErrInternalError,
@@ -401,6 +402,14 @@ func (jwa JWTIdentity) Refresh(ctx context.Context, encodedRefreshToken string) 
 		return JWTAuth{}, JWTError{
 			SrcErr: errors.New("refresh has expired, relogin"),
 			Err:    ErrExpiredRefreshToken,
+		}
+	}
+
+	// Delete old token existing for record for access.
+	if err = jwa.whitelist.Remove(ctx, record.PublicID, specialID); err != nil {
+		return JWTAuth{}, JWTError{
+			Err:    ErrInternalError,
+			SrcErr: err,
 		}
 	}
 
@@ -438,7 +447,7 @@ func (jwa JWTIdentity) Refresh(ctx context.Context, encodedRefreshToken string) 
 		RefreshToken:     drefreshToken,
 		AccessToken:      jwtAccessToken,
 		Expires:  claim.ExpiresAt,
-		RefreshExpires: record.Expires.Unix(),
+		RefreshExpires: record.Expires,
 		TokenType: "Bearer",
 	}, nil
 }
@@ -456,10 +465,10 @@ func (jwa JWTIdentity) Grant(ctx context.Context, cr {{.Contract.Package}}.{{.Co
 	refreshExpires := now.Add(jwa.config.RefreshTokenExpires)
 
 	var record Identity
-	record.IssuedAt = now
-	record.LastLogin = now
+	record.IssuedAt = now.Unix()
+	record.LastLogin = now.Unix()
 	record.Data = rclaim.Data
-	record.Expires = refreshExpires
+	record.Expires = refreshExpires.Unix()
 	record.TargetID = rclaim.TargetID
 	record.PublicID = uuid.NewV4().String()
 	record.RefreshToken = uuid.NewV4().String()

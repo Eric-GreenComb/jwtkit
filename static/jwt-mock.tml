@@ -168,3 +168,93 @@ func (impl IdentityDB) GetAll(ctx context.Context, order string, orderBy string,
 
 }
 
+// TokenBackend returns a in-memory token set.
+func TokenBackend() tokens.TokenSet {
+	var mocker tokenSetImpl
+
+	db := map[string][]tokens.Token{}
+
+	mocker.HasFunc = func(ctx context.Context, id string, token string) (bool, error) {
+		if set, ok := db[id]; ok {
+		for _, item := range set {
+		if item.Value != token {
+		continue
+		}
+
+		return true, nil
+		}
+		}
+
+		return false, nil
+	}
+
+	mocker.RemoveFunc = func(ctx context.Context, id string, token string) error {
+		if set, ok := db[id]; ok {
+		for index, item := range set {
+		if item.Value != token {
+		continue
+		}
+
+		set = append(set[:index], set[index+1:]...)
+		db[id] = set
+		return nil
+		}
+		}
+
+		return tokens.ErrNotFound
+	}
+
+	mocker.AddFunc = func(ctx context.Context, id string, token string) (tokens.Token, error) {
+		if set, ok := db[id]; ok {
+		for _, item := range set {
+		if item.Value == token {
+		return item, nil
+		}
+		}
+
+		tok := tokens.NewToken(id, token)
+		db[id] = append(set, tok)
+		return tok, nil
+		}
+
+		tok := tokens.NewToken(id, token)
+		db[id] = []tokens.Token{tok}
+		return tok, nil
+	}
+
+	return mocker
+}
+
+// TokenSetImpl defines a concrete struct which implements the methods for the
+// TokenSet interface. All methods will panic, so add necessary internal logic.
+type tokenSetImpl struct {
+	RemoveFunc func(ctx context.Context, target string, token string) error
+
+	HasFunc func(ctx context.Context, target string, token string) (bool, error)
+
+	AddFunc func(ctx context.Context, target string, token string) (tokens.Token, error)
+}
+
+// Remove implements the TokenSet.Remove() method for TokenSetImpl.
+func (impl tokenSetImpl) Remove(ctx context.Context, target string, token string) error {
+
+	ret1 := impl.RemoveFunc(ctx, target, token)
+	return ret1
+
+}
+
+// Has implements the TokenSet.Has() method for TokenSetImpl.
+func (impl tokenSetImpl) Has(ctx context.Context, target string, token string) (bool, error) {
+
+	ret1, ret2 := impl.HasFunc(ctx, target, token)
+	return ret1, ret2
+
+}
+
+// Add implements the TokenSet.Add() method for TokenSetImpl.
+func (impl tokenSetImpl) Add(ctx context.Context, target string, token string) (tokens.Token, error) {
+
+	ret1, ret2 := impl.AddFunc(ctx, target, token)
+	return ret1, ret2
+
+}
