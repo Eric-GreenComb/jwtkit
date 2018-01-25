@@ -13,6 +13,10 @@ It generates all necessary code to issue jwt access and refresh tokens for use i
 go get -u github.com/gokit/jwtkit
 ```
 
+## Examples
+
+See [Examples](./examples) for demonstrations of jwtkit code generation.
+
 ## Usage
 
 Running the following commands instantly generates all necessary files and packages for giving code gen.
