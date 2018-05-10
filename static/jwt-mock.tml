@@ -1,6 +1,6 @@
 
-// IdentityBackend returns a new instance of {{.PackageName}}.IdentityDBBackend
-func IdentityBackend() {{.PackageName}}.IdentityDBBackend {
+// IdentityBackend returns a new instance of {{.PackageName}}.IdentityDB
+func IdentityBackend() {{.PackageName}}.IdentityDB {
 	var mocker IdentityDB
 
 	db := make(map[string]{{.PackageName}}.Identity)
@@ -85,7 +85,7 @@ func IdentityBackend() {{.PackageName}}.IdentityDBBackend {
 }
 
 // IdentityDB defines a concrete struct which implements the methods for the
-// {{.PackageName}}.IdentityDBBackend interface. All methods will panic, so add necessary internal logic.
+// {{.PackageName}}.IdentityDB interface. All methods will panic, so add necessary internal logic.
 type IdentityDB struct {
 	CountFunc func(ctx context.Context) (int, error)
 
@@ -104,7 +104,7 @@ type IdentityDB struct {
 	GetAllFunc func(ctx context.Context, order string, orderBy string, page int, responsePerPage int) ([]{{.PackageName}}.Identity, int, error)
 }
 
-// Count implements the IdentityDBBackend.Count() method for IdentityDB.
+// Count implements the IdentityDB.Count() method for IdentityDB.
 func (impl IdentityDB) Count(ctx context.Context) (int, error) {
 
 	ret1, ret2 := impl.CountFunc(ctx)
@@ -112,7 +112,7 @@ func (impl IdentityDB) Count(ctx context.Context) (int, error) {
 
 }
 
-// Delete implements the IdentityDBBackend.Delete() method for IdentityDB.
+// Delete implements the IdentityDB.Delete() method for IdentityDB.
 func (impl IdentityDB) Delete(ctx context.Context, publicID string) error {
 
 	ret1 := impl.DeleteFunc(ctx, publicID)
@@ -120,7 +120,7 @@ func (impl IdentityDB) Delete(ctx context.Context, publicID string) error {
 
 }
 
-// Create implements the IdentityDBBackend.Create() method for IdentityDB.
+// Create implements the IdentityDB.Create() method for IdentityDB.
 func (impl IdentityDB) Create(ctx context.Context, elem {{.PackageName}}.Identity) error {
 
 	ret1 := impl.CreateFunc(ctx, elem)
@@ -128,7 +128,7 @@ func (impl IdentityDB) Create(ctx context.Context, elem {{.PackageName}}.Identit
 
 }
 
-// Get implements the IdentityDBBackend.Get() method for IdentityDB.
+// Get implements the IdentityDB.Get() method for IdentityDB.
 func (impl IdentityDB) Get(ctx context.Context, publicID string) ({{.PackageName}}.Identity, error) {
 
 	ret1, ret2 := impl.GetFunc(ctx, publicID)
@@ -136,7 +136,7 @@ func (impl IdentityDB) Get(ctx context.Context, publicID string) ({{.PackageName
 
 }
 
-// Update implements the IdentityDBBackend.Update() method for IdentityDB.
+// Update implements the IdentityDB.Update() method for IdentityDB.
 func (impl IdentityDB) Update(ctx context.Context, publicID string, elem {{.PackageName}}.Identity) error {
 
 	ret1 := impl.UpdateFunc(ctx, publicID, elem)
@@ -144,7 +144,7 @@ func (impl IdentityDB) Update(ctx context.Context, publicID string, elem {{.Pack
 
 }
 
-// GetAllByOrder implements the IdentityDBBackend.GetAllByOrder() method for IdentityDB.
+// GetAllByOrder implements the IdentityDB.GetAllByOrder() method for IdentityDB.
 func (impl IdentityDB) GetAllByOrder(ctx context.Context, order string, orderBy string) ([]{{.PackageName}}.Identity, error) {
 
 	ret1, ret2 := impl.GetAllByOrderFunc(ctx, order, orderBy)
@@ -152,7 +152,7 @@ func (impl IdentityDB) GetAllByOrder(ctx context.Context, order string, orderBy 
 
 }
 
-// GetByField implements the IdentityDBBackend.GetByField() method for IdentityDB.
+// GetByField implements the IdentityDB.GetByField() method for IdentityDB.
 func (impl IdentityDB) GetByField(ctx context.Context, key string, value interface{}) ({{.PackageName}}.Identity, error) {
 
 	ret1, ret2 := impl.GetByFieldFunc(ctx, key, value)
@@ -160,7 +160,7 @@ func (impl IdentityDB) GetByField(ctx context.Context, key string, value interfa
 
 }
 
-// GetAll implements the IdentityDBBackend.GetAll() method for IdentityDB.
+// GetAll implements the IdentityDB.GetAll() method for IdentityDB.
 func (impl IdentityDB) GetAll(ctx context.Context, order string, orderBy string, page int, responsePerPage int) ([]{{.PackageName}}.Identity, int, error) {
 
 	ret1, ret2, ret3 := impl.GetAllFunc(ctx, order, orderBy, page, responsePerPage)

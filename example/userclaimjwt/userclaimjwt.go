@@ -1,88 +1,92 @@
 // Package userclaimjwt provides a auto-generated package which contains a API for authentication using JWT.
-//
+// 
 //
 package userclaimjwt
 
 import (
-	"encoding/base64"
-	"time"
+     "time"
 
-	"errors"
 
-	"strings"
+     "errors"
 
-	"context"
 
-	jwt "github.com/dgrijalva/jwt-go"
+     "strings"
 
-	uuid "github.com/satori/go.uuid"
 
-	"github.com/influx6/faux/httputil"
+     "context"
 
-	"github.com/gokit/tokens"
 
-	"github.com/gokit/jwtkit/example"
+    jwt "github.com/dgrijalva/jwt-go"
+
+
+     "github.com/rs/xid"
+
+
+     "github.com/gokit/tokens"
+
+
+     "github.com/gokit/jwtkit/example"
+
 )
+
 
 // errors ...
 var (
-	ErrNotFound                = errors.New("not found")
-	ErrInvalidIdentity         = errors.New("provided Identity is invalid")
-	ErrParseJWTToken           = errors.New("parse error: invalid jwt token")
+	ErrNotFound = errors.New("not found")
+	ErrInvalidIdentity   = errors.New("provided Identity is invalid")
+	ErrParseJWTToken        = errors.New("parse error: invalid jwt token")
 	ErrNoJWTAuthorizationToken = errors.New("no jwt authorization token")
-	ErrInternalError           = errors.New("backend failed with error")
-	ErrInvalidJWTToken         = errors.New("received jwt token is invalid")
-	ErrUnexpectedJWTClaim      = errors.New("jwt token claim is not expected type")
-	ErrExpiredJWTToken         = errors.New("received jwt token is expired")
-	ErrInvalidRefreshToken     = errors.New("Invalid refresh token")
-	ErrTokenRefreshDenied      = errors.New("refresh_token already blacklist")
-	ErrExpiredRefreshToken     = errors.New("refresh_token already expired")
-	ErrNoTargetHeaderInToken   = errors.New("token.Header has no 'jwt-target-id'")
-	ErrExpiredAccessToken      = errors.New("access_token already expired")
-	ErrInvalidSigningMethod    = errors.New("token signing method mismatched")
-	ErrFailedToGetSecret       = errors.New("target-id failed to get secret from secrets function")
+	ErrInternalError        = errors.New("backend failed with error")
+	ErrInvalidJWTToken      = errors.New("received jwt token is invalid")
+	ErrUnexpectedJWTClaim   = errors.New("jwt token claim is not expected type")
+	ErrExpiredJWTToken      = errors.New("received jwt token is expired")
+	ErrInvalidRefreshToken  = errors.New("Invalid refresh token")
+	ErrTokenRefreshDenied   = errors.New("refresh_token already blacklist")
+	ErrExpiredRefreshToken  = errors.New("refresh_token already expired")
+	ErrNoTargetHeaderInToken  = errors.New("token.Header has no 'jwt-target-id'")
+	ErrExpiredAccessToken  = errors.New("access_token already expired")
+	ErrInvalidSigningMethod = errors.New("token signing method mismatched")
+	ErrFailedToGetSecret        = errors.New("target-id failed to get secret from secrets function")
 )
 
 // Identity embodies data stored for a user's login credentials.
-// @sqlapi
-// @mongoapi
 type Identity struct {
-	PublicID        string            `json:"public_id"`
-	RefreshToken    string            `json:"refresh_token"`
-	Expires         int64             `json:"expires"`
-	TargetID        string            `json:"target_id"`
-	LastLogin       int64             `json:"last_login"`
-	IssuedAt        int64             `json:"last_login"`
-	RefreshInterval time.Duration     `json:"refresh_interval"`
-	Data            example.UserClaim `json:"data"`
+    PublicID        string        `json:"public_id"`
+    RefreshToken    string        `json:"refresh_token"`
+    Expires         int64     `json:"expires"`
+    TargetID        string        `json:"target_id"`
+    LastLogin       int64     `json:"last_login"`
+    IssuedAt        int64     `json:"last_login"`
+    RefreshInterval time.Duration `json:"refresh_interval"`
+	Data example.UserClaim `json:"data"`
 }
 
 // Validate returns an error if giving Identity does not match desired
 // field value state.
 func (id Identity) Validate() error {
-	if strings.TrimSpace(id.PublicID) == "" {
-		return errors.New("PublicID is required")
-	}
+    if strings.TrimSpace(id.PublicID) == "" {
+        return errors.New("PublicID is required")
+    }
 
-	if strings.TrimSpace(id.RefreshToken) == "" {
-		return errors.New("RefreshToken is required")
-	}
+    if strings.TrimSpace(id.RefreshToken) == "" {
+        return errors.New("RefreshToken is required")
+    }
 
-	if strings.TrimSpace(id.TargetID) == "" {
-		return errors.New("TargetID is required")
-	}
+    if strings.TrimSpace(id.TargetID) == "" {
+        return errors.New("TargetID is required")
+    }
 
-	return nil
+    return nil
 }
 
 // JWTAuth embodies data provided as response to a token refresh or sso
 // login operation.
 type JWTAuth struct {
-	AccessToken    string `json:"access_token"`
-	RefreshToken   string `json:"refresh_token"`
-	TokenType      string `json:"token_type"`
-	Expires        int64  `json:"expires"`
-	RefreshExpires int64  `json:"refresh_expires"`
+    AccessToken     string `json:"access_token"`
+    RefreshToken    string `json:"refresh_token"`
+	TokenType       string `json:"token_type"`
+    Expires         int64  `json:"expires"`
+    RefreshExpires  int64  `json:"refresh_expires"`
 }
 
 // Validate returns an error if giving JWTAuth does not match desired
@@ -112,20 +116,20 @@ func (ja JWTAuth) Validate() error {
 
 // JWTError embodies data sent as error for a operation.
 type JWTError struct {
-	Err    error `json:"err"`
-	SrcErr error `json:"srcerr"`
+    Err    error `json:"err"`
+    SrcErr error `json:"srcerr"`
 }
 
 // Error returns the underline combined src and err error values
 // associated with the error instance.
 func (t JWTError) Error() string {
-	return t.Err.Error() + " (" + t.SrcErr.Error() + ")"
+    return t.Err.Error() + " (" + t.SrcErr.Error() + ")"
 }
 
-// IdentityDBBackend defines an interface which exposes a underline storage system
+// IdentityDB defines an interface which exposes a underline storage system
 // for retrieving and storing identity records.
 // @implement
-type IdentityDBBackend interface {
+type IdentityDB interface {
 	Count(ctx context.Context) (int, error)
 	Delete(ctx context.Context, publicID string) error
 	Create(ctx context.Context, elem Identity) error
@@ -152,22 +156,7 @@ type IdentityBackend interface {
 	Delete(context.Context, string) error
 	Get(context.Context, string) (Identity, error)
 	Update(context.Context, string, Identity) error
-	GetAll(context.Context, string, string, int, int) ([]Identity, int, error)
-}
-
-// IdentityHTTP defines an interface which expose an interface for
-// http api for Identity.
-type IdentityHTTP interface {
-	Get(*httputil.Context) error
-	Info(*httputil.Context) error
-	Update(*httputil.Context) error
-	Delete(*httputil.Context) error
-	GetAll(*httputil.Context) error
-	Grant(*httputil.Context) error
-	Revoke(*httputil.Context) error
-	Refresh(*httputil.Context) error
-	Authenticate(*httputil.Context) error
-	AuthenticateJSON(*httputil.Context) error
+    GetAll(context.Context, string, string, int, int) ([]Identity, int, error)
 }
 
 // IdentityToken embodies data received over api calls to refresh or revoke a identity token.
@@ -177,35 +166,35 @@ type IdentityToken struct {
 
 // IdentityAccess embodies data received over api calls to revoke or refresh a identity token.
 type IdentityAccess struct {
-	Type        string `json:"type"`
+	Type string  `json:"type"`
 	AccessToken string `json:"access_token"`
 }
 
 // IdentityInfo contains meta-data regarding all records in db of type Identity.
 type IdentityInfo struct {
-	Total int `json:"total"`
+	 Total int `json:"total"`
 }
 
 // Identities defines a type to represent the response given to a request for
 // all records of the type example.Identity.
 type Identities struct {
-	Page            int        `json:"page"`
-	ResponsePerPage int        `json:"responsePerPage"`
-	TotalRecords    int        `json:"total_records"`
-	Records         []Identity `json:"records"`
+	 Page int `json:"page"`
+	 ResponsePerPage int `json:"responsePerPage"`
+	 TotalRecords int `json:"total_records"`
+	 Records []Identity `json:"records"`
 }
 
 // Testimony embodies data returned by user for creation of new identity claim.
 type Testimony struct {
-	TargetID string
-	Data     example.UserClaim
+    TargetID    string
+    Data example.UserClaim
 }
-
-// JWTClaim embodies the data attached with the standard claims.
+        
+// JWTClaim embodies the data attached with the standard claims.        
 type JWTClaim struct {
-	jwt.StandardClaims
+    jwt.StandardClaims
 	SpecialID string `json:"special_id"`
-	Data      example.UserClaim
+    Data example.UserClaim
 }
 
 // IdentityMaker defines a function type provided by maker for generating identity claim.
@@ -220,9 +209,9 @@ type TokenSecrets func(context.Context, JWTConfig, string) ([]byte, error)
 
 // JWTConfig embodies the field for configuring JWTBackend.
 type JWTConfig struct {
-	Signer              string
-	AccessTokenExpires  time.Duration
-	RefreshTokenExpires time.Duration
+    Signer              string
+    AccessTokenExpires  time.Duration
+    RefreshTokenExpires time.Duration
 	Maker               IdentityMaker
 	Secrets             TokenSecrets
 	Validator           TokenValidator
@@ -235,17 +224,17 @@ type JWTIdentity struct {
 	config    JWTConfig
 	blacklist tokens.TokenSet
 	whitelist tokens.TokenSet
-	IdentityDBBackend
+	IdentityDB
 }
 
 // NewJWTIdentity returns a new JWTIdentity instance which embodies and implements the IdentityBackend
 // interface.
-func NewJWTIdentity(config JWTConfig, whitelist tokens.TokenSet, blacklist tokens.TokenSet, backend IdentityDBBackend) JWTIdentity {
+func NewJWTIdentity(config JWTConfig, whitelist tokens.TokenSet,blacklist tokens.TokenSet, backend IdentityDB) JWTIdentity {
 	return JWTIdentity{
-		config:            config,
-		blacklist:         blacklist,
-		whitelist:         whitelist,
-		IdentityDBBackend: backend,
+		config: config,
+		blacklist: blacklist,
+		whitelist: whitelist,
+		IdentityDB: backend,
 	}
 }
 
@@ -311,7 +300,7 @@ func (jwa JWTIdentity) Authenticate(ctx context.Context, accessToken string) (ex
 	}
 
 	// check in-memory cache.
-	has, err := jwa.whitelist.Has(ctx, claim.Id, claim.SpecialID)
+    has, err := jwa.whitelist.Has(ctx, claim.Id, claim.SpecialID)
 	if err != nil {
 		return example.UserClaim{}, JWTError{
 			Err:    ErrParseJWTToken,
@@ -341,7 +330,7 @@ func (jwa JWTIdentity) Revoke(ctx context.Context, encodedRefreshToken string) e
 	}
 
 	decodedRefToken := strings.Split(string(unbased64Token), ":")
-	if len(decodedRefToken) != 2 {
+	if len(decodedRefToken) != 2{
 		return JWTError{
 			Err:    ErrInvalidRefreshToken,
 			SrcErr: errors.New("refresh_token does not match wanted format"),
@@ -351,7 +340,7 @@ func (jwa JWTIdentity) Revoke(ctx context.Context, encodedRefreshToken string) e
 	refreshToken, specialID := decodedRefToken[0], decodedRefToken[1]
 
 	// Retrieve jwt record from backend.
-	record, err := jwa.IdentityDBBackend.GetByField(ctx, "refresh_token", refreshToken)
+	record, err := jwa.IdentityDB.GetByField(ctx, "refresh_token", refreshToken)
 	if err != nil {
 		return JWTError{
 			SrcErr: err,
@@ -367,7 +356,7 @@ func (jwa JWTIdentity) Revoke(ctx context.Context, encodedRefreshToken string) e
 		}
 	}
 
-	if err = jwa.IdentityDBBackend.Delete(ctx, record.PublicID); err != nil {
+	if err = jwa.IdentityDB.Delete(ctx, record.PublicID); err != nil {
 		return JWTError{
 			SrcErr: err,
 			Err:    ErrInternalError,
@@ -397,7 +386,7 @@ func (jwa JWTIdentity) Refresh(ctx context.Context, encodedRefreshToken string) 
 	}
 
 	decodedRefToken := strings.Split(string(unbased64Token), ":")
-	if len(decodedRefToken) != 2 {
+	if len(decodedRefToken) != 2{
 		return JWTAuth{}, JWTError{
 			Err:    ErrInvalidRefreshToken,
 			SrcErr: errors.New("refresh_token does not match wanted format"),
@@ -407,7 +396,7 @@ func (jwa JWTIdentity) Refresh(ctx context.Context, encodedRefreshToken string) 
 	refreshToken, specialID := decodedRefToken[0], decodedRefToken[1]
 
 	// Retrieve jwt record from backend.
-	record, err := jwa.IdentityDBBackend.GetByField(ctx, "refresh_token", refreshToken)
+	record, err := jwa.IdentityDB.GetByField(ctx, "refresh_token", refreshToken)
 	if err != nil {
 		return JWTAuth{}, JWTError{
 			SrcErr: err,
@@ -435,7 +424,7 @@ func (jwa JWTIdentity) Refresh(ctx context.Context, encodedRefreshToken string) 
 	now := time.Now()
 	expires := time.Unix(record.Expires, 0)
 	if expires.Before(now) {
-		if err := jwa.IdentityDBBackend.Delete(ctx, record.PublicID); err != nil {
+		if err := jwa.IdentityDB.Delete(ctx, record.PublicID); err != nil {
 			return JWTAuth{}, JWTError{
 				Err:    ErrInternalError,
 				SrcErr: err,
@@ -481,6 +470,7 @@ func (jwa JWTIdentity) Refresh(ctx context.Context, encodedRefreshToken string) 
 		}
 	}
 
+
 	accessExpires := now.Add(jwa.config.AccessTokenExpires)
 
 	var claim JWTClaim
@@ -489,7 +479,7 @@ func (jwa JWTIdentity) Refresh(ctx context.Context, encodedRefreshToken string) 
 	claim.IssuedAt = now.Unix()
 	claim.Subject = record.TargetID
 	claim.ExpiresAt = accessExpires.Unix()
-	claim.SpecialID = uuid.NewV4().String()
+	claim.SpecialID = xid.New().String()
 
 	// add record target and public key to current active lists.
 	if _, err = jwa.whitelist.Add(ctx, record.PublicID, claim.SpecialID); err != nil {
@@ -498,6 +488,7 @@ func (jwa JWTIdentity) Refresh(ctx context.Context, encodedRefreshToken string) 
 			SrcErr: err,
 		}
 	}
+
 
 	jwtToken := jwt.NewWithClaims(jwa.config.Method, claim)
 	jwtToken.Header["jwt-target-id"] = record.TargetID
@@ -513,11 +504,11 @@ func (jwa JWTIdentity) Refresh(ctx context.Context, encodedRefreshToken string) 
 	drefreshToken := base64.StdEncoding.EncodeToString([]byte(record.RefreshToken + ":" + claim.SpecialID))
 
 	return JWTAuth{
-		RefreshToken:   drefreshToken,
-		AccessToken:    jwtAccessToken,
-		Expires:        claim.ExpiresAt,
+		RefreshToken:     drefreshToken,
+		AccessToken:      jwtAccessToken,
+		Expires:  claim.ExpiresAt,
 		RefreshExpires: record.Expires,
-		TokenType:      "Bearer",
+		TokenType: "Bearer",
 	}, nil
 }
 
@@ -530,7 +521,7 @@ func (jwa JWTIdentity) Grant(ctx context.Context, cr example.CreateUserSession) 
 	}
 
 	// Retrieve secret for target from secrets function.
-	secret, err := jwa.config.Secrets(ctx, jwa.config, rclaim.TargetID)
+	secret, err := jwa.config.Secrets(ctx,jwa.config, rclaim.TargetID)
 	if err != nil {
 		return JWTAuth{}, JWTError{
 			Err:    ErrFailedToGetSecret,
@@ -548,8 +539,8 @@ func (jwa JWTIdentity) Grant(ctx context.Context, cr example.CreateUserSession) 
 	record.Data = rclaim.Data
 	record.Expires = refreshExpires.Unix()
 	record.TargetID = rclaim.TargetID
-	record.PublicID = uuid.NewV4().String()
-	record.RefreshToken = uuid.NewV4().String()
+	record.PublicID = xid.New().String()
+	record.RefreshToken = xid.New().String()
 	record.RefreshInterval = jwa.config.AccessTokenExpires
 
 	if err := record.Validate(); err != nil {
@@ -565,10 +556,10 @@ func (jwa JWTIdentity) Grant(ctx context.Context, cr example.CreateUserSession) 
 	claim.IssuedAt = now.Unix()
 	claim.Subject = record.TargetID
 	claim.ExpiresAt = accessExpires.Unix()
-	claim.SpecialID = uuid.NewV4().String()
+	claim.SpecialID = xid.New().String()
 
 	// Save new user record and send out refresh token and access token.
-	if err := jwa.IdentityDBBackend.Create(ctx, record); err != nil {
+	if err := jwa.IdentityDB.Create(ctx, record); err != nil {
 		return JWTAuth{}, JWTError{
 			Err:    ErrInternalError,
 			SrcErr: err,
@@ -594,13 +585,14 @@ func (jwa JWTIdentity) Grant(ctx context.Context, cr example.CreateUserSession) 
 	}
 
 	// create new refresh token with special id and record refresh token.
-	refreshToken := base64.StdEncoding.EncodeToString([]byte(record.RefreshToken + ":" + claim.SpecialID))
+	refreshToken := base64.StdEncoding.EncodeToString([]byte(record.RefreshToken+":"+claim.SpecialID))
 
 	return JWTAuth{
-		TokenType:      "Bearer",
-		RefreshToken:   refreshToken,
-		AccessToken:    jwtAccessToken,
-		Expires:        claim.ExpiresAt,
+		TokenType: "Bearer",
+		RefreshToken:     refreshToken,
+		AccessToken:      jwtAccessToken,
+		Expires:  claim.ExpiresAt,
 		RefreshExpires: refreshExpires.Unix(),
 	}, nil
 }
+

@@ -17,10 +17,10 @@ func main() {
 		ShortDesc: "Generates jwt packages for structs",
 		Desc:      "Generates packages to create JWT Authentication API for JWT based SSO Login",
 		Action: func(ctx flags.Context) error {
-			force, _ := ctx.GetBool("force")
-			dest, _ := ctx.GetString("dest")
-			target, _ := ctx.GetString("target")
-			verbose, _ := ctx.GetBool("verbose")
+			force := ctx.GetBool("force")
+			dest := ctx.GetString("dest")
+			target := ctx.GetString("target")
+			verbose := ctx.GetBool("verbose")
 
 			logs := metrics.New()
 

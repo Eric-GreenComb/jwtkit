@@ -1,25 +1,34 @@
 package userclaimjwt_test
 
 import (
-	"encoding/json"
-	"fmt"
+     "fmt"
 
-	"testing"
 
-	"time"
+     "testing"
 
-	"context"
 
-	"github.com/influx6/faux/tests"
+     "time"
 
-	jwt "github.com/dgrijalva/jwt-go"
 
-	userclaimjwt "github.com/gokit/jwtkit/example/userclaimjwt"
+     "context"
 
-	"github.com/gokit/jwtkit/example/userclaimjwt/mock"
 
-	"github.com/gokit/jwtkit/example"
+     "github.com/influx6/faux/tests"
+
+
+    jwt "github.com/dgrijalva/jwt-go"
+
+
+    userclaimjwt "github.com/gokit/jwtkit/example/userclaimjwt"
+
+
+     "github.com/gokit/jwtkit/example/userclaimjwt/mock"
+
+
+     "github.com/gokit/jwtkit/example"
+
 )
+
 
 var (
 	claimDataJSON = `{
@@ -28,17 +37,17 @@ var (
     "user":	{
 	
 	
-	    "email":	"",
-	
-	    "public_id":	"",
-	
 	    "tenant_id":	"",
 	
 	    "private_id":	"",
 	
 	    "two_factor_auth":	false,
 	
-	    "username":	""
+	    "username":	"",
+	
+	    "email":	"",
+	
+	    "public_id":	""
 	
 	},
 
@@ -48,9 +57,9 @@ var (
 	contractDataJSON = `{
 
 
-    "email":	"lGardner@Skippad.info",
+    "email":	"GaryCruz@Agivu.net",
 
-    "password":	"7zt2c7hdjbww67366idp",
+    "password":	"i24kq6y7bk7a9ssm3l5r",
 
     "expiration":	null
 
@@ -58,6 +67,7 @@ var (
 	userClaim = userclaimjwt.Testimony{
 		TargetID: "7fd15938c823cf58e78019dfddf2af142f9449696a",
 	}
+
 )
 
 func noSecureUser(ctx context.Context, config userclaimjwt.JWTConfig, cr example.CreateUserSession) (userclaimjwt.Testimony, error) {
@@ -69,7 +79,7 @@ func noSecureUser(ctx context.Context, config userclaimjwt.JWTConfig, cr example
 	return userClaim, nil
 }
 
-func secretFunc(ctx context.Context, config userclaimjwt.JWTConfig, targetID string) ([]byte, error) {
+func secretFunc(ctx context.Context, config userclaimjwt.JWTConfig, targetID string) ([]byte, error){
 	return []byte("All we want is to sign this"), nil
 }
 

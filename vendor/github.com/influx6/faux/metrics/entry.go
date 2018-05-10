@@ -14,6 +14,23 @@ const (
 	InfoLvl                     // Information for view about code operation (replaces Debug, Notice, Trace).
 )
 
+// Entry represent a giving record of data at a giving period of time.
+type Entry struct {
+	ID        string      `json:"id"`
+	Function  string      `json:"function"`
+	File      string      `json:"file"`
+	Type      string      `json:"type"`
+	Line      int         `json:"line"`
+	Level     Level       `json:"level"`
+	Field     Field       `json:"fields"`
+	Time      time.Time   `json:"time"`
+	Message   string      `json:"message"`
+	Filter    interface{} `json:"filter"`
+	Tags      []string    `json:"tags"`
+	Trace     Trace       `json:"trace"`
+	Timelapse []Timelapse `json:"timelapse"`
+}
+
 // Level defines a int type which represent the a giving level of entry for a giving entry.
 type Level int
 
@@ -50,12 +67,9 @@ func (l Level) String() string {
 	return "UNKNOWN"
 }
 
-// EntryMod defines a function type which receives a pointer to an entry.
-type EntryMod func(*Entry)
-
-// Partial returns a new EntryMod which will always apply provided EntryMod
+// Partial returns a new func(*Entry) which will always apply provided func(*Entry)
 // to all provided Entry.
-func Partial(mods ...EntryMod) EntryMod {
+func Partial(mods ...func(*Entry)) func(*Entry) {
 	if len(mods) == 1 {
 		return mods[0]
 	}
@@ -67,8 +81,8 @@ func Partial(mods ...EntryMod) EntryMod {
 	}
 }
 
-// Apply runs all giving EntryMod functions provided on the provided Entry.
-func Apply(en *Entry, mods ...EntryMod) {
+// Apply runs all giving func(*Entry) functions provided on the provided Entry.
+func Apply(en *Entry, mods ...func(*Entry)) {
 	for _, mod := range mods {
 		mod(en)
 	}
@@ -82,7 +96,7 @@ type Timelapse struct {
 }
 
 // WithTimelapse returns a Timelapse with associated field and message.
-func WithTimelapse(message string, f Field) EntryMod {
+func WithTimelapse(message string, f Field) func(*Entry) {
 	return func(en *Entry) {
 		en.Timelapse = append(en.Timelapse, Timelapse{
 			Field:   f,
@@ -93,14 +107,14 @@ func WithTimelapse(message string, f Field) EntryMod {
 }
 
 // YellowAlert returns an Entry with the level set to YellowAlertLvl.
-func YellowAlert(err error, message string, m ...interface{}) EntryMod {
+func YellowAlert(err error, message string, m ...interface{}) func(*Entry) {
 	return Partial(withMessageAt(4, YellowAlertLvl, message, m...), func(en *Entry) {
 		en.Field["error"] = err
 	})
 }
 
 // RedAlert returns an Entry with the level set to RedAlertLvl.
-func RedAlert(err error, message string, m ...interface{}) EntryMod {
+func RedAlert(err error, message string, m ...interface{}) func(*Entry) {
 	return Partial(withMessageAt(4, RedAlertLvl, message, m...), func(en *Entry) {
 		en.Field["error"] = err
 	})
@@ -109,7 +123,7 @@ func RedAlert(err error, message string, m ...interface{}) EntryMod {
 // Errorf returns a entry where the message is the provided error.Error() value
 // produced from the message and its provided values
 // and the error is added as a key-value within the Entry fields.
-func Errorf(message string, m ...interface{}) EntryMod {
+func Errorf(message string, m ...interface{}) func(*Entry) {
 	err := fmt.Errorf(message, m...)
 	return Partial(withMessageAt(4, ErrorLvl, err.Error()), func(en *Entry) {
 		en.Field["error"] = err
@@ -118,31 +132,47 @@ func Errorf(message string, m ...interface{}) EntryMod {
 
 // Error returns a entry where the message is the provided error.Error() value
 // and the error is added as a key-value within the Entry fields.
-func Error(err error) EntryMod {
+func Error(err error) func(*Entry) {
 	return Partial(withMessageAt(4, ErrorLvl, err.Error()), func(en *Entry) {
 		en.Field["error"] = err
 	})
 }
 
+// Tags returns an Entry with the tags value set to ts.
+func Tags(ts ...string) func(*Entry) {
+	return func(en *Entry) {
+		en.Tags = ts
+	}
+}
+
+// Type returns an Entry with the type value set to t.
+func Type(t string) func(*Entry) {
+	return func(en *Entry) {
+		en.Type = t
+	}
+}
+
 // Info returns an Entry with the level set to Info.
-func Info(message string, m ...interface{}) EntryMod {
+func Info(message string, m ...interface{}) func(*Entry) {
 	return withMessageAt(4, InfoLvl, message, m...)
 }
 
 // Message returns a new Entry with the provided Level and message used.
-func Message(message string, m ...interface{}) EntryMod {
+func Message(message string, m ...interface{}) func(*Entry) {
+	function, file, line := getFunctionName(3)
 	return func(en *Entry) {
 		en.Message = fmt.Sprintf(message, m...)
+		en.Function, en.File, en.Line = function, file, line
 	}
 }
 
 // WithMessage returns a new Entry with the provided Level and message used.
-func WithMessage(level Level, message string, m ...interface{}) EntryMod {
+func WithMessage(level Level, message string, m ...interface{}) func(*Entry) {
 	return withMessageAt(4, level, message, m...)
 }
 
 // withMessage returns a new Entry with the provided Level and message used.
-func withMessageAt(depth int, level Level, message string, m ...interface{}) EntryMod {
+func withMessageAt(depth int, level Level, message string, m ...interface{}) func(*Entry) {
 	function, file, line := getFunctionName(depth)
 	return func(e *Entry) {
 		e.Level = level
@@ -160,29 +190,33 @@ func withMessageAt(depth int, level Level, message string, m ...interface{}) Ent
 
 // WithTrace returns itself after setting the giving trace value
 // has the method trace for the giving Entry.
-func WithTrace(t *Trace) EntryMod {
+func WithTrace(t Trace) func(*Entry) {
+	function, file, line := getFunctionName(3)
 	return func(en *Entry) {
 		en.Trace = t
+		en.Function, en.File, en.Line = function, file, line
 	}
 }
 
-// WithField returns a Entry and set the Filter to the provided value.
-func WithField(filter interface{}) EntryMod {
+// WithFilter returns a Entry and set the Filter to the provided value.
+func WithFilter(filter interface{}) func(*Entry) {
 	return func(en *Entry) {
 		en.Filter = filter
 	}
 }
 
 // WithID returns a Entry and set the ID to the provided value.
-func WithID(id string) EntryMod {
+func WithID(id string) func(*Entry) {
+	function, file, line := getFunctionName(3)
 	return func(en *Entry) {
 		en.ID = id
+		en.Function, en.File, en.Line = function, file, line
 	}
 }
 
 // With returns a Entry set to the LogLevel of the previous and
 // adds the giving key-value pair to the entry.
-func With(key string, value interface{}) EntryMod {
+func With(key string, value interface{}) func(*Entry) {
 	return func(en *Entry) {
 		if en.Field == nil {
 			en.Field = make(Field)
@@ -194,7 +228,7 @@ func With(key string, value interface{}) EntryMod {
 
 // WithFields adds all field key-value pair into associated Entry
 // returning the Entry.
-func WithFields(f Field) EntryMod {
+func WithFields(f Field) func(*Entry) {
 	return func(en *Entry) {
 		if en.Field == nil {
 			en.Field = make(Field)
@@ -204,72 +238,4 @@ func WithFields(f Field) EntryMod {
 			en.Field[k] = v
 		}
 	}
-}
-
-// Entry represent a giving record of data at a giving period of time.
-type Entry struct {
-	ID        string      `json:"id"`
-	Function  string      `json:"function"`
-	File      string      `json:"file"`
-	Line      int         `json:"line"`
-	Level     Level       `json:"level"`
-	Field     Field       `json:"fields"`
-	Time      time.Time   `json:"time"`
-	Message   string      `json:"message"`
-	Filter    interface{} `json:"filter"`
-	Trace     *Trace      `json:"trace"`
-	Timelapse []Timelapse `json:"timelapse"`
-}
-
-// WithMessage sets the Entry Message value.
-func (e Entry) WithMessage(message string, m ...interface{}) Entry {
-	if len(m) == 0 {
-		e.Message = message
-		return e
-	}
-
-	e.Message = fmt.Sprintf(message, m...)
-	return e
-}
-
-// WithID sets the Entry ID value.
-func (e Entry) WithID(id string) Entry {
-	e.ID = id
-	return e
-}
-
-// WithLevel sets the Entry level.
-func (e Entry) WithLevel(l Level) Entry {
-	e.Level = l
-	return e
-}
-
-// WithTimelapse adds provided Timelapse into Entry.Timelapse slice.
-func (e Entry) WithTimelapse(t Timelapse) Entry {
-	e.Timelapse = append(e.Timelapse, t)
-	return e
-}
-
-// WithTrace returns itself after setting the giving trace value
-// has the method trace for the giving Entry.
-func (e Entry) WithTrace(t *Trace) Entry {
-	e.Trace = t
-	return e
-}
-
-// With returns a Entry set to the LogLevel of the previous and
-// adds the giving key-value pair to the entry.
-func (e Entry) With(key string, value interface{}) Entry {
-	e.Field[key] = value
-	return e
-}
-
-// WithFields adds all field key-value pair into associated Entry
-// returning the Entry.
-func (e Entry) WithFields(f Field) Entry {
-	for k, v := range f {
-		e.Field[k] = v
-	}
-
-	return e
 }

@@ -1,21 +1,28 @@
 package mock
 
 import (
-	"fmt"
+     "fmt"
 
-	"strings"
 
-	"errors"
+     "strings"
 
-	"context"
 
-	"github.com/gokit/tokens"
+     "errors"
 
-	userclaimjwt "github.com/gokit/jwtkit/example/userclaimjwt"
+
+     "context"
+
+
+     "github.com/gokit/tokens"
+
+
+    userclaimjwt "github.com/gokit/jwtkit/example/userclaimjwt"
+
 )
 
-// IdentityBackend returns a new instance of userclaimjwt.IdentityDBBackend
-func IdentityBackend() userclaimjwt.IdentityDBBackend {
+
+// IdentityBackend returns a new instance of userclaimjwt.IdentityDB
+func IdentityBackend() userclaimjwt.IdentityDB {
 	var mocker IdentityDB
 
 	db := make(map[string]userclaimjwt.Identity)
@@ -100,7 +107,7 @@ func IdentityBackend() userclaimjwt.IdentityDBBackend {
 }
 
 // IdentityDB defines a concrete struct which implements the methods for the
-// userclaimjwt.IdentityDBBackend interface. All methods will panic, so add necessary internal logic.
+// userclaimjwt.IdentityDB interface. All methods will panic, so add necessary internal logic.
 type IdentityDB struct {
 	CountFunc func(ctx context.Context) (int, error)
 
@@ -119,7 +126,7 @@ type IdentityDB struct {
 	GetAllFunc func(ctx context.Context, order string, orderBy string, page int, responsePerPage int) ([]userclaimjwt.Identity, int, error)
 }
 
-// Count implements the IdentityDBBackend.Count() method for IdentityDB.
+// Count implements the IdentityDB.Count() method for IdentityDB.
 func (impl IdentityDB) Count(ctx context.Context) (int, error) {
 
 	ret1, ret2 := impl.CountFunc(ctx)
@@ -127,7 +134,7 @@ func (impl IdentityDB) Count(ctx context.Context) (int, error) {
 
 }
 
-// Delete implements the IdentityDBBackend.Delete() method for IdentityDB.
+// Delete implements the IdentityDB.Delete() method for IdentityDB.
 func (impl IdentityDB) Delete(ctx context.Context, publicID string) error {
 
 	ret1 := impl.DeleteFunc(ctx, publicID)
@@ -135,7 +142,7 @@ func (impl IdentityDB) Delete(ctx context.Context, publicID string) error {
 
 }
 
-// Create implements the IdentityDBBackend.Create() method for IdentityDB.
+// Create implements the IdentityDB.Create() method for IdentityDB.
 func (impl IdentityDB) Create(ctx context.Context, elem userclaimjwt.Identity) error {
 
 	ret1 := impl.CreateFunc(ctx, elem)
@@ -143,7 +150,7 @@ func (impl IdentityDB) Create(ctx context.Context, elem userclaimjwt.Identity) e
 
 }
 
-// Get implements the IdentityDBBackend.Get() method for IdentityDB.
+// Get implements the IdentityDB.Get() method for IdentityDB.
 func (impl IdentityDB) Get(ctx context.Context, publicID string) (userclaimjwt.Identity, error) {
 
 	ret1, ret2 := impl.GetFunc(ctx, publicID)
@@ -151,7 +158,7 @@ func (impl IdentityDB) Get(ctx context.Context, publicID string) (userclaimjwt.I
 
 }
 
-// Update implements the IdentityDBBackend.Update() method for IdentityDB.
+// Update implements the IdentityDB.Update() method for IdentityDB.
 func (impl IdentityDB) Update(ctx context.Context, publicID string, elem userclaimjwt.Identity) error {
 
 	ret1 := impl.UpdateFunc(ctx, publicID, elem)
@@ -159,7 +166,7 @@ func (impl IdentityDB) Update(ctx context.Context, publicID string, elem usercla
 
 }
 
-// GetAllByOrder implements the IdentityDBBackend.GetAllByOrder() method for IdentityDB.
+// GetAllByOrder implements the IdentityDB.GetAllByOrder() method for IdentityDB.
 func (impl IdentityDB) GetAllByOrder(ctx context.Context, order string, orderBy string) ([]userclaimjwt.Identity, error) {
 
 	ret1, ret2 := impl.GetAllByOrderFunc(ctx, order, orderBy)
@@ -167,7 +174,7 @@ func (impl IdentityDB) GetAllByOrder(ctx context.Context, order string, orderBy 
 
 }
 
-// GetByField implements the IdentityDBBackend.GetByField() method for IdentityDB.
+// GetByField implements the IdentityDB.GetByField() method for IdentityDB.
 func (impl IdentityDB) GetByField(ctx context.Context, key string, value interface{}) (userclaimjwt.Identity, error) {
 
 	ret1, ret2 := impl.GetByFieldFunc(ctx, key, value)
@@ -175,7 +182,7 @@ func (impl IdentityDB) GetByField(ctx context.Context, key string, value interfa
 
 }
 
-// GetAll implements the IdentityDBBackend.GetAll() method for IdentityDB.
+// GetAll implements the IdentityDB.GetAll() method for IdentityDB.
 func (impl IdentityDB) GetAll(ctx context.Context, order string, orderBy string, page int, responsePerPage int) ([]userclaimjwt.Identity, int, error) {
 
 	ret1, ret2, ret3 := impl.GetAllFunc(ctx, order, orderBy, page, responsePerPage)
@@ -191,13 +198,13 @@ func TokenBackend() tokens.TokenSet {
 
 	mocker.HasFunc = func(ctx context.Context, id string, token string) (bool, error) {
 		if set, ok := db[id]; ok {
-			for _, item := range set {
-				if item.Value != token {
-					continue
-				}
+		for _, item := range set {
+		if item.Value != token {
+		continue
+		}
 
-				return true, nil
-			}
+		return true, nil
+		}
 		}
 
 		return false, nil
@@ -205,15 +212,15 @@ func TokenBackend() tokens.TokenSet {
 
 	mocker.RemoveFunc = func(ctx context.Context, id string, token string) error {
 		if set, ok := db[id]; ok {
-			for index, item := range set {
-				if item.Value != token {
-					continue
-				}
+		for index, item := range set {
+		if item.Value != token {
+		continue
+		}
 
-				set = append(set[:index], set[index+1:]...)
-				db[id] = set
-				return nil
-			}
+		set = append(set[:index], set[index+1:]...)
+		db[id] = set
+		return nil
+		}
 		}
 
 		return tokens.ErrNotFound
@@ -221,15 +228,15 @@ func TokenBackend() tokens.TokenSet {
 
 	mocker.AddFunc = func(ctx context.Context, id string, token string) (tokens.Token, error) {
 		if set, ok := db[id]; ok {
-			for _, item := range set {
-				if item.Value == token {
-					return item, nil
-				}
-			}
+		for _, item := range set {
+		if item.Value == token {
+		return item, nil
+		}
+		}
 
-			tok := tokens.NewToken(id, token)
-			db[id] = append(set, tok)
-			return tok, nil
+		tok := tokens.NewToken(id, token)
+		db[id] = append(set, tok)
+		return tok, nil
 		}
 
 		tok := tokens.NewToken(id, token)

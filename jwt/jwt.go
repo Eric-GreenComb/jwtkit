@@ -7,11 +7,10 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/influx6/faux/fmtwriter"
-
 	"github.com/gokit/jwtkit/static"
 	"github.com/influx6/moz/ast"
 	"github.com/influx6/moz/gen"
+	"runtime"
 )
 
 // JWTGen generates a package for jwt authentication and api.
@@ -25,7 +24,7 @@ func JWTGen(toPackage string, an ast.AnnotationDeclaration, str ast.StructDeclar
 	}
 
 	var contract ast.StructDeclaration
-	action, ok := pkg.StructFor(pkgDeclr.Path, contractName)
+	action, ok := pkg.StructFor(contractName)
 	if !ok {
 		return nil, errors.New(`Struct of type "` + contractName + `" not found`)
 	}
@@ -36,7 +35,7 @@ func JWTGen(toPackage string, an ast.AnnotationDeclaration, str ast.StructDeclar
 
 	jwtGen := gen.Block(
 		gen.Commentary(
-			gen.SourceText(`Package `+packageName+` provides a auto-generated package which contains a API for authentication using JWT.`, str),
+			gen.SourceText("jwt.packageTitle",`Package `+packageName+` provides a auto-generated package which contains a API for authentication using JWT.`, str),
 		),
 		gen.Package(
 			gen.Name(packageName),
@@ -46,13 +45,13 @@ func JWTGen(toPackage string, an ast.AnnotationDeclaration, str ast.StructDeclar
 				gen.Import("strings", ""),
 				gen.Import("context", ""),
 				gen.Import("github.com/dgrijalva/jwt-go", "jwt"),
-				gen.Import("github.com/satori/go.uuid", "uuid"),
-				gen.Import("github.com/influx6/faux/httputil", ""),
+				gen.Import("github.com/rs/xid", ""),
 				gen.Import("github.com/gokit/tokens", ""),
 				gen.Import(str.Path, ""),
 			),
 			gen.Block(
 				gen.SourceTextWith(
+					"jwt.api",
 					string(static.MustReadFile("jwt-api.tml", true)),
 					gen.ToTemplateFuncs(
 						ast.ASTTemplatFuncs,
@@ -84,11 +83,11 @@ func JWTGen(toPackage string, an ast.AnnotationDeclaration, str ast.StructDeclar
 				gen.Import("errors", ""),
 				gen.Import("context", ""),
 				gen.Import("github.com/gokit/tokens", ""),
-				gen.Import(filepath.Join(toPackage, packageName), packageName),
-				gen.Import(str.Path, ""),
+				gen.Import(join(toPackage, packageName), packageName),
 			),
 			gen.Block(
 				gen.SourceTextWith(
+					"jwt.mock",
 					string(static.MustReadFile("jwt-mock.tml", true)),
 					gen.ToTemplateFuncs(
 						ast.ASTTemplatFuncs,
@@ -122,18 +121,17 @@ func JWTGen(toPackage string, an ast.AnnotationDeclaration, str ast.StructDeclar
 				gen.Import("fmt", ""),
 				gen.Import("testing", ""),
 				gen.Import("time", ""),
-				gen.Import("errors", ""),
 				gen.Import("context", ""),
-				gen.Import("github.com/gokit/tokens", ""),
 				gen.Import("github.com/influx6/faux/tests", ""),
 				gen.Import("github.com/dgrijalva/jwt-go", "jwt"),
-				gen.Import(filepath.Join(toPackage, packageName), packageName),
-				gen.Import(filepath.Join(toPackage, packageName, "mock"), ""),
+				gen.Import(join(toPackage, packageName), packageName),
+				gen.Import(join(toPackage, packageName, "mock"), ""),
 				gen.Import(str.Path, ""),
 			),
 			gen.Block(
 				gen.SourceTextWith(
-					string(static.MustReadFile("jwt-api-test.tml", true)),
+					"jwt.test",
+					string(static.MustReadFile("jwt-test.tml", true)),
 					gen.ToTemplateFuncs(
 						ast.ASTTemplatFuncs,
 						template.FuncMap{
@@ -159,46 +157,47 @@ func JWTGen(toPackage string, an ast.AnnotationDeclaration, str ast.StructDeclar
 		),
 	)
 
-	jwtHTTPGen := gen.Block(
-		gen.Package(
-			gen.Name(packageName),
-			gen.Imports(
-				gen.Import("errors", ""),
-				gen.Import("fmt", ""),
-				gen.Import("context", ""),
-				gen.Import("net/http", ""),
-				gen.Import("encoding/json", ""),
-				gen.Import("github.com/influx6/faux/metrics", ""),
-				gen.Import("github.com/influx6/faux/httputil", ""),
-				gen.Import(str.Path, ""),
-			),
-			gen.Block(
-				gen.SourceTextWith(
-					string(static.MustReadFile("jwt-api-http.tml", true)),
-					gen.ToTemplateFuncs(
-						ast.ASTTemplatFuncs,
-						template.FuncMap{
-							"hasFunc":       pkgDeclr.HasFunctionFor,
-							"mapRandomJSON": ast.MapOutFieldsWithRandomValuesToJSON,
-						},
-					),
-					struct {
-						Pkg      *ast.PackageDeclaration
-						Struct   ast.StructDeclaration
-						Contract ast.StructDeclaration
-					}{
-						Pkg:      &pkgDeclr,
-						Struct:   str,
-						Contract: contract,
-					},
-				),
-			),
-		),
-	)
+	//jwtHTTPGen := gen.Block(
+	//	gen.Package(
+	//		gen.Name(packageName),
+	//		gen.Imports(
+	//			gen.Import("errors", ""),
+	//			gen.Import("fmt", ""),
+	//			gen.Import("context", ""),
+	//			gen.Import("net/http", ""),
+	//			gen.Import("encoding/json", ""),
+	//			gen.Import("github.com/influx6/faux/metrics", ""),
+	//			gen.Import("github.com/influx6/faux/httputil", ""),
+	//			gen.Import(str.Path, ""),
+	//		),
+	//		gen.Block(
+	//			gen.SourceTextWith(
+	//				string(static.MustReadFile("jwt-api-http.tml", true)),
+	//				gen.ToTemplateFuncs(
+	//					ast.ASTTemplatFuncs,
+	//					template.FuncMap{
+	//						"hasFunc":       pkgDeclr.HasFunctionFor,
+	//						"mapRandomJSON": ast.MapOutFieldsWithRandomValuesToJSON,
+	//					},
+	//				),
+	//				struct {
+	//					Pkg      *ast.PackageDeclaration
+	//					Struct   ast.StructDeclaration
+	//					Contract ast.StructDeclaration
+	//				}{
+	//					Pkg:      &pkgDeclr,
+	//					Struct:   str,
+	//					Contract: contract,
+	//				},
+	//			),
+	//		),
+	//	),
+	//)
 
 	jwtReadmeGen := gen.Block(
 		gen.Block(
 			gen.SourceTextWith(
+				"jwt.readme",
 				string(static.MustReadFile("jwt-api-readme.tml", true)),
 				gen.ToTemplateFuncs(
 					ast.ASTTemplatFuncs,
@@ -231,26 +230,34 @@ func JWTGen(toPackage string, an ast.AnnotationDeclaration, str ast.StructDeclar
 			Dir:      packageName,
 		},
 		{
-			Writer:   fmtwriter.New(jwtGen, true, true),
+			Writer:   jwtGen,
 			FileName: fmt.Sprintf("%s.go", packageName),
 			Dir:      packageName,
 		},
 		{
-			Writer:   fmtwriter.New(jwtTestGen, true, true),
+			Writer:   jwtTestGen,
 			FileName: fmt.Sprintf("%s_test.go", packageName),
 			Dir:      packageName,
 		},
 		{
-			Writer:   fmtwriter.New(jwtMockGen, true, true),
+			Writer:   jwtMockGen,
 			FileName: fmt.Sprintf("%s.go", packageName),
 			Dir:      filepath.Join(packageName, "mock"),
 		},
-		{
-			Writer:   fmtwriter.New(jwtHTTPGen, true, true),
-			FileName: fmt.Sprintf("%s_api.go", packageName),
-			Dir:      packageName,
-		},
+		//{
+		//	Writer:   (jwtHTTPGen),
+		//	FileName: fmt.Sprintf("%s_api.go", packageName),
+		//	Dir:      packageName,
+		//},
 	}
 
 	return writers, nil
+}
+
+func join(s ...string) string {
+	ss := filepath.Join(s...)
+	if runtime.GOOS == "windows"{
+		return filepath.ToSlash(ss)
+	}
+	return ss
 }
