@@ -10,6 +10,9 @@ import (
      "time"
 
 
+     "encoding/json"
+
+
      "context"
 
 
@@ -37,17 +40,17 @@ var (
     "user":	{
 	
 	
-	    "tenant_id":	"",
-	
-	    "private_id":	"",
-	
-	    "two_factor_auth":	false,
-	
 	    "username":	"",
 	
 	    "email":	"",
 	
-	    "public_id":	""
+	    "public_id":	"",
+	
+	    "tenant_id":	"",
+	
+	    "private_id":	"",
+	
+	    "two_factor_auth":	false
 	
 	},
 
@@ -57,9 +60,9 @@ var (
 	contractDataJSON = `{
 
 
-    "email":	"GaryCruz@Agivu.net",
+    "email":	"LoriHenry@Zooveo.biz",
 
-    "password":	"i24kq6y7bk7a9ssm3l5r",
+    "password":	"yyqa023r5h10q6aamqnv",
 
     "expiration":	null
 

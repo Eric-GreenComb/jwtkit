@@ -21,3 +21,36 @@ type IdentityBackend interface {
 }
 ```
 
+
+```go
+
+var contractDataJSON = `{
+
+
+    "password":	"3mkbzeb1pooel6mxw38z",
+
+    "expiration":	null,
+
+    "email":	"DorothyBurns@Buzzbean.gov"
+
+}`
+
+blacklist := mock.TokenBackend()
+whitelist := mock.TokenBackend()
+idb := mock.IdentityBackend()
+jwter := userclaimjwt.NewJWTIdentity(userclaimjwt.JWTConfig{
+    Maker:               noSecureUser,
+    Signer:              "wellington",
+    Secrets:             secretFunc,
+    Method:              jwt.SigningMethodHS256,
+    AccessTokenExpires:  600 * time.Millisecond,
+    RefreshTokenExpires: 1 * time.Second,
+}, blacklist, whitelist, idb)
+
+var cred example.CreateUserSession
+if jsnerr := json.Unmarshal([]byte(contractDataJSON), &cred); jsnerr != nil {
+    log.Fatal(jserr)
+}
+
+auth, err := jwter.Grant(context.Background(), cred)
+```
