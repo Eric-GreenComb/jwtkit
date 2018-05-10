@@ -35,7 +35,7 @@ func JWTGen(toPackage string, an ast.AnnotationDeclaration, str ast.StructDeclar
 
 	jwtGen := gen.Block(
 		gen.Commentary(
-			gen.SourceText("jwt.packageTitle",`Package `+packageName+` provides a auto-generated package which contains a API for authentication using JWT.`, str),
+			gen.SourceText("jwt.packageTitle", `Package `+packageName+` provides a auto-generated package which contains a API for authentication using JWT.`, str),
 		),
 		gen.Package(
 			gen.Name(packageName),
@@ -258,7 +258,7 @@ func JWTGen(toPackage string, an ast.AnnotationDeclaration, str ast.StructDeclar
 
 func join(s ...string) string {
 	ss := filepath.Join(s...)
-	if runtime.GOOS == "windows"{
+	if runtime.GOOS == "windows" {
 		return filepath.ToSlash(ss)
 	}
 	return ss

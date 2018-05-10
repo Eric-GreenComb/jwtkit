@@ -1,25 +1,18 @@
 package mock
 
 import (
-     "fmt"
+	"fmt"
 
+	"strings"
 
-     "strings"
+	"errors"
 
+	"context"
 
-     "errors"
+	"github.com/gokit/tokens"
 
-
-     "context"
-
-
-     "github.com/gokit/tokens"
-
-
-    userclaimjwt "github.com/gokit/jwtkit/example/userclaimjwt"
-
+	userclaimjwt "github.com/gokit/jwtkit/example/userclaimjwt"
 )
-
 
 // IdentityBackend returns a new instance of userclaimjwt.IdentityDB
 func IdentityBackend() userclaimjwt.IdentityDB {
@@ -198,13 +191,13 @@ func TokenBackend() tokens.TokenSet {
 
 	mocker.HasFunc = func(ctx context.Context, id string, token string) (bool, error) {
 		if set, ok := db[id]; ok {
-		for _, item := range set {
-		if item.Value != token {
-		continue
-		}
+			for _, item := range set {
+				if item.Value != token {
+					continue
+				}
 
-		return true, nil
-		}
+				return true, nil
+			}
 		}
 
 		return false, nil
@@ -212,15 +205,15 @@ func TokenBackend() tokens.TokenSet {
 
 	mocker.RemoveFunc = func(ctx context.Context, id string, token string) error {
 		if set, ok := db[id]; ok {
-		for index, item := range set {
-		if item.Value != token {
-		continue
-		}
+			for index, item := range set {
+				if item.Value != token {
+					continue
+				}
 
-		set = append(set[:index], set[index+1:]...)
-		db[id] = set
-		return nil
-		}
+				set = append(set[:index], set[index+1:]...)
+				db[id] = set
+				return nil
+			}
 		}
 
 		return tokens.ErrNotFound
@@ -228,15 +221,15 @@ func TokenBackend() tokens.TokenSet {
 
 	mocker.AddFunc = func(ctx context.Context, id string, token string) (tokens.Token, error) {
 		if set, ok := db[id]; ok {
-		for _, item := range set {
-		if item.Value == token {
-		return item, nil
-		}
-		}
+			for _, item := range set {
+				if item.Value == token {
+					return item, nil
+				}
+			}
 
-		tok := tokens.NewToken(id, token)
-		db[id] = append(set, tok)
-		return tok, nil
+			tok := tokens.NewToken(id, token)
+			db[id] = append(set, tok)
+			return tok, nil
 		}
 
 		tok := tokens.NewToken(id, token)

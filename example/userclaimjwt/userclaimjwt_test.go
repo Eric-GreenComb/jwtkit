@@ -1,37 +1,26 @@
 package userclaimjwt_test
 
 import (
-     "fmt"
+	"fmt"
 
+	"testing"
 
-     "testing"
+	"time"
 
+	"encoding/json"
 
-     "time"
+	"context"
 
+	"github.com/influx6/faux/tests"
 
-     "encoding/json"
+	jwt "github.com/dgrijalva/jwt-go"
 
+	userclaimjwt "github.com/gokit/jwtkit/example/userclaimjwt"
 
-     "context"
+	"github.com/gokit/jwtkit/example/userclaimjwt/mock"
 
-
-     "github.com/influx6/faux/tests"
-
-
-    jwt "github.com/dgrijalva/jwt-go"
-
-
-    userclaimjwt "github.com/gokit/jwtkit/example/userclaimjwt"
-
-
-     "github.com/gokit/jwtkit/example/userclaimjwt/mock"
-
-
-     "github.com/gokit/jwtkit/example"
-
+	"github.com/gokit/jwtkit/example"
 )
-
 
 var (
 	claimDataJSON = `{
@@ -70,7 +59,6 @@ var (
 	userClaim = userclaimjwt.Testimony{
 		TargetID: "7fd15938c823cf58e78019dfddf2af142f9449696a",
 	}
-
 )
 
 func noSecureUser(ctx context.Context, config userclaimjwt.JWTConfig, cr example.CreateUserSession) (userclaimjwt.Testimony, error) {
@@ -82,7 +70,7 @@ func noSecureUser(ctx context.Context, config userclaimjwt.JWTConfig, cr example
 	return userClaim, nil
 }
 
-func secretFunc(ctx context.Context, config userclaimjwt.JWTConfig, targetID string) ([]byte, error){
+func secretFunc(ctx context.Context, config userclaimjwt.JWTConfig, targetID string) ([]byte, error) {
 	return []byte("All we want is to sign this"), nil
 }
 
